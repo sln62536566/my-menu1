@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>李鍋燒專賣</title>
+<style>
+body { font-family: sans-serif; margin:0; }
+.header { background:#ffcc00; padding:15px; font-size:22px; text-align:center; }
+.container { display:flex; flex-wrap: wrap; }
+.menu { width:65%; padding:10px; }
+.cart { width:35%; border-left:2px solid #000; padding:10px; }
+h2 { background:#eee; padding:8px; }
+.item-btn { padding:15px; margin:5px; width:45%; font-size:18px; }
+.option { display:block; margin:5px 0; }
+.total { font-size:22px; margin-top:10px; }
+.big-btn { width:100%; padding:15px; font-size:20px; margin-top:10px; }
+.qty-container { display:flex; align-items:center; margin:5px 0; }
+.qty-container button { padding:5px 10px; margin:0 5px; }
+</style>
+</head>
+<body>
+
+<div class="header">李鍋燒專賣</div>
+<div class="container">
+  <div class="menu" id="menu"></div>
+  <div class="cart">
+    <h2>訂單</h2>
+    <div id="cart"></div>
+    <h3>加料</h3>
+    <div id="options"></div>
+    <div class="total" id="total">總金額：0</div>
+    <button class="big-btn" onclick="addToCart()">加入訂單</button>
+    <button class="big-btn" onclick="checkout()">送出訂單</button>
+  </div>
+</div>
+
+<script>
+const API_URL = "https://script.google.com/macros/s/AKfycbxVYCFSJPCspj-JWNXtRNSPkqG9EqdPABaFVvFYRAiIdQNrPZfTVcClQIuJbg3bTmlJ1g/exec";
+
+const options = [
+  {name:"加番茄醬",price:10},
+  {name:"加蛋",price:15},
+  {name:"加料",price:20},
+  {name:"加泡菜",price:20},
+  {name:"加肉絲",price:30},
+  {name:"加蝦仁",price:40}
+];
+
+const menuData = [
+  {category:"鍋燒類", items:[
+    {name:"鍋燒意麵",price:80},
+    {name:"鍋燒烏龍麵",price:80},
+    {name:"鍋燒雞絲麵",price:80},
+    {name:"鍋燒冬粉",price:80},
+    {name:"鍋燒米粉",price:80},
+    {name:"鍋燒粄條",price:80},
+    {name:"鍋燒粥",price:80},
+    {name:"鍋燒泡麵",price:100}
+  ]},
+  {category:"炒飯類", items:[
+    {name:"蛋炒飯",price:70},
+    {name:"肉絲炒飯",price:80},
+    {name:"蝦仁炒飯",price:90}
+  ]},
+  {category:"炒麵類", items:[
+    {name:"炒泡麵",price:100},
+    {name:"炒意麵",price:100},
+    {name:"炒烏龍麵",price:100},
+    {name:"炒冬粉",price:100},
+    {name:"炒米粉",price:100},
+    {name:"炒粄條",price:100},
+    {name:"炒雞絲麵",price:100}
+  ]},
+  {category:"其他類", items:[
+    {name:"咖哩烏龍",price:110},
+    {name:"雞肉咖哩飯",price:110},
+    {name:"海鮮咖哩飯",price:110},
+    {name:"鴨肉冬粉",price:80},
+    {name:"魚肚粥",price:120}
+  ]},
+  {category:"湯類", items:[
+    {name:"魚丸湯",price:50},
+    {name:"貢丸湯",price:50},
+    {name:"紫菜蛋花湯",price:50},
+    {name:"蛤仔湯",price:60},
+    {name:"魚肚湯",price:110}
+  ]},
+  {category:"飲料類", items:[
+    {name:"紅茶",price:25},
+    {name:"冬瓜茶",price:25}
+  ]}
+];
+
+let cart = [];
+let currentItem = null;
+
+function renderMenu(){
+  let html="";
+  menuData.forEach(cat=>{
+    html += `<h2>${cat.category}</h2>`;
+    cat.items.forEach(item=>{
+      html += `<button class="item-btn" onclick="selectItem('${item.name}',${item.price})">${item.name}<br>$${item.price}</button>`;
+    });
+  });
+  document.getElementById("menu").innerHTML = html;
+}
+
+function renderOptions(){
+  let html="";
+  options.forEach((opt,i)=>{
+    html += `<label class="option"><input type="checkbox" value="${i}"> ${opt.name} +${opt.price}</label>`;
+  });
+  document.getElementById("options").innerHTML = html;
+}
+
+function selectItem(name, price){
+  currentItem = {name, price, qty:1};
+  alert("已選擇：" + name);
+  if(name === "鍋燒意麵"){
+    let qtyHtml = `<div class="qty-container">
+      <button onclick="changeQty(-1)">-</button>
+      <span id="qty-display">${currentItem.qty}</span>
+      <button onclick="changeQty(1)">+</button>
+    </div>`;
+    document.getElementById("options").insertAdjacentHTML("beforeend", qtyHtml);
+  }
+}
+
+function changeQty(val){
+  currentItem.qty += val;
+  if(currentItem.qty<1) currentItem.qty=1;
+  document.getElementById("qty-display").innerText = currentItem.qty;
+}
+
+function addToCart(){
+  if(!currentItem){ alert("請先選擇餐點"); return;}
+  let selected = document.querySelectorAll("#options input[type=checkbox]:checked");
+  let total = currentItem.price * (currentItem.qty || 1);
+  let opts = [];
+  selected.forEach(s=>{
+    let o = options[s.value];
+    total += o.price;
+    opts.push(o.name);
+  });
+  cart.push({name: currentItem.name, qty: currentItem.qty, options: opts.join(','), price: total});
+  document.querySelectorAll("#options input").forEach(c=>c.checked=false);
+  if(document.getElementById("qty-display")) document.getElementById("qty-display").parentElement.remove();
+  currentItem = null;
+  renderCart();
+}
+
+function renderCart(){
+  let total=0;
+  let html="";
+  cart.forEach((i, idx)=>{
+    total += i.price;
+    html += `<div>${i.name} x${i.qty} $${i.price} <button onclick="removeCart(${idx})">取消</button></div>`;
+    if(i.options) html += `<div style="margin-left:10px;">+ ${i.options}</div>`;
+  });
+  document.getElementById("cart").innerHTML = html;
+  document.getElementById("total").innerText = "總金額：" + total;
+}
+
+function removeCart(idx){
+  cart.splice(idx,1);
+  renderCart();
+}
+
+function checkout(){
+  if(cart.length===0){ alert("沒有訂單"); return; }
+  cart.forEach(item => {
+    fetch(API_URL, {
+      method: "POST",
+      body: JSON.stringify(item),
+      headers: {'Content-Type': 'application/json'}
+    });
+  });
+  alert("訂單送出成功！");
+  cart = [];
+  renderCart();
+}
+
+renderMenu();
+renderOptions();
+</script>
+</body>
+</html>
